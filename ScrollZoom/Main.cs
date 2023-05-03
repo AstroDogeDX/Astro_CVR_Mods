@@ -3,8 +3,6 @@ using ABI_RC.Core.Savior;
 using HarmonyLib;
 using MelonLoader;
 using UnityEngine;
-using System.Collections;
-using System;
 
 namespace Astro.ScrollZoom;
 
