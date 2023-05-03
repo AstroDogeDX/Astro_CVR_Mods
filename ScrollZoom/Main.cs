@@ -32,24 +32,9 @@ public class ScrollZoom : MelonMod {
         public static ScrollZoom scrollZoomInstance;
         public static bool zoomToggleState;
         public static float currentZoomLevel;
-        public static bool debounceInProgress = false;
-        private static bool toggleSet = false;
-
-        public static IEnumerator DebounceCoroutine(float debounceTime)
-        {
-            debounceInProgress = true;
-            yield return new WaitForSeconds(debounceTime);
-            debounceInProgress = false;
-        }
+        public static bool debounceInProgress;
 
 
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(CVR_DesktopCameraController), nameof(CVR_DesktopCameraController.Start))]
-        public static void before_CVR_DesktopCameraController_Start()
-        {
-            zoomToggleState = false;
-            currentZoomLevel = 0f;
-        }
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(CVR_DesktopCameraController), nameof(CVR_DesktopCameraController.Update))]
@@ -74,9 +59,6 @@ public class ScrollZoom : MelonMod {
                 return false;
             }
 
-
-
-
             if (!zoomToggleState && !CVRInputManager.Instance.zoom) //Zoomm is off and no button pressed
             {
                 CVR_DesktopCameraController._cam.fieldOfView = CVR_DesktopCameraController.defaultFov;
@@ -87,17 +69,10 @@ public class ScrollZoom : MelonMod {
             }
 
             currentZoomLevel += scrollZoomInstance.zoomStepAmount.Value * Math.Sign(scrollWheelValue);
-            currentZoomLevel = Math.Max(Math.Min(currentZoomLevel, 1), 0); //clamp currentZoomLevel 0> <1               
-
-
+            currentZoomLevel = Math.Max(Math.Min(currentZoomLevel, 1f), 0f); //clamp currentZoomLevel 0> <1     
             CVR_DesktopCameraController._cam.fieldOfView = Mathf.Lerp(CVR_DesktopCameraController.defaultFov, Mathf.Lerp(60f, 1f, scrollZoomInstance.maxZoomLevel.Value), currentZoomLevel);
             CVR_DesktopCameraController.currentZoomProgress = currentZoomLevel;
             CVR_DesktopCameraController.currentZoomProgressCurve = currentZoomLevel;
-            
-
-
-
-
 
             if (!scrollZoomInstance.rememberLastZoomLevel.Value)
             {
