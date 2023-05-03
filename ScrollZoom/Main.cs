@@ -4,6 +4,7 @@ using HarmonyLib;
 using MelonLoader;
 using UnityEngine;
 using System.Collections;
+using System;
 
 namespace Astro.ScrollZoom;
 
@@ -59,22 +60,23 @@ public class ScrollZoom : MelonMod {
                 return false;
             }
 
-            if (zoomToggleState && scrollWheelValue > 0f || CVRInputManager.Instance.zoom && scrollWheelValue > 0f) {
-                currentZoomLevel = currentZoomLevel >= 1f ? 1f : currentZoomLevel += scrollZoomInstance.zoomStepAmount.Value;
+            if (zoomToggleState || CVRInputManager.Instance.zoom)
+            {
+                currentZoomLevel += scrollZoomInstance.zoomStepAmount.Value * Math.Sign(scrollWheelValue);
+                currentZoomLevel = Math.Max(Math.Min(currentZoomLevel,1),0); //clamp currentZoomLevel 0> <1
             }
-            else if (zoomToggleState && scrollWheelValue < 0f || CVRInputManager.Instance.zoom && scrollWheelValue < 0f) {
-                currentZoomLevel = currentZoomLevel <= 0f ? 0f : currentZoomLevel -= scrollZoomInstance.zoomStepAmount.Value;
-            }
+
 
             if (!scrollZoomInstance.holdToZoom.Value && !CVRInputManager.Instance.zoom)
             {
-                if(zoomToggleState)
+                if (zoomToggleState)
                 {
                     CVR_DesktopCameraController._cam.fieldOfView = Mathf.Lerp(CVR_DesktopCameraController.defaultFov, Mathf.Lerp(60f, 1f, scrollZoomInstance.maxZoomLevel.Value), currentZoomLevel);
                     CVR_DesktopCameraController.currentZoomProgress = currentZoomLevel;
                     CVR_DesktopCameraController.currentZoomProgressCurve = currentZoomLevel;
                     return false;
-                } else
+                }
+                else
                 {
                     CVR_DesktopCameraController._cam.fieldOfView = CVR_DesktopCameraController.defaultFov;
                     CVR_DesktopCameraController.currentZoomProgress = 0f;
