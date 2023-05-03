@@ -35,12 +35,16 @@ public class ScrollZoom : MelonMod {
         public static bool debounceInProgress;
 
 
-
         [HarmonyPrefix]
         [HarmonyPatch(typeof(CVR_DesktopCameraController), nameof(CVR_DesktopCameraController.Update))]
         public static bool before_CVR_DesktopCameraController_Update(CVR_DesktopCameraController __instance) 
         { 
             float scrollWheelValue = Input.GetAxis("Mouse ScrollWheel");
+
+            if (!CVR_DesktopCameraController.enableZoom)
+            {
+                return false;
+            }
 
             //Toggles Zoom when button is pressed, only allows new toggle after button is let go of.
             if (CVRInputManager.Instance.zoom && !debounceInProgress && !scrollZoomInstance.holdToZoom.Value)
@@ -52,11 +56,6 @@ public class ScrollZoom : MelonMod {
             else if (!CVRInputManager.Instance.zoom)
             {
                 debounceInProgress = false;
-            }
-
-            if (!CVR_DesktopCameraController.enableZoom)
-            {
-                return false;
             }
 
             if (!zoomToggleState && !CVRInputManager.Instance.zoom) //Zoomm is off and no button pressed
