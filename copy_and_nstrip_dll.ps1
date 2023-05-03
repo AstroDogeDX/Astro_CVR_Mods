@@ -5,7 +5,7 @@ $cvrManagedDataPath = "\ChilloutVR_Data\Managed"
 
 $cvrPath = $env:CVRPATH
 $cvrExecutable = "ChilloutVR.exe"
-$cvrDefaultPath = "G:\SteamLibrary\steamapps\common\ChilloutVR"
+$cvrDefaultPath = "D:\SteamLibrary\steamapps\common\ChilloutVR"
 
 if ($cvrPath -and (Test-Path "$cvrPath\$cvrExecutable")) {
     # Found ChilloutVR.exe in the existing CVRPATH
