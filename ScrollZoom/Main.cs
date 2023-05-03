@@ -59,6 +59,12 @@ public class ScrollZoom : MelonMod {
                 debounceInProgress = false;
             }
 
+            //Disables toggled scrolling if the quick menu/big menu is opened. TODO: Find a callback for when a menu opens instead for unknown scenarios/mod compat.
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Tab))
+            {
+                zoomToggleState = false;
+            }
+
             if (scrollWheelValue > 0f && CVRInputManager.Instance.zoom && scrollZoomInstance.holdToZoom.Value || scrollWheelValue > 0f && !scrollZoomInstance.holdToZoom.Value && zoomToggleState)
             {
                 targetZoomLevel += scrollZoomInstance.zoomStepAmount.Value; //Increment the target zoom level when the scroll wheel moves up
