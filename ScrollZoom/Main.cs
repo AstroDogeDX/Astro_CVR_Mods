@@ -53,7 +53,8 @@ public class ScrollZoom : MelonMod {
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(CVR_DesktopCameraController), nameof(CVR_DesktopCameraController.Update))]
-        public static bool before_CVR_DesktopCameraController_Update(CVR_DesktopCameraController __instance) { 
+        public static bool before_CVR_DesktopCameraController_Update(CVR_DesktopCameraController __instance) 
+        { 
             float scrollWheelValue = Input.GetAxis("Mouse ScrollWheel");
 
             //Toggles Zoom when button is pressed, only allows new toggle after button is let go of.
@@ -73,56 +74,38 @@ public class ScrollZoom : MelonMod {
                 return false;
             }
 
-            if (zoomToggleState || CVRInputManager.Instance.zoom)
+
+
+
+            if (!zoomToggleState && !CVRInputManager.Instance.zoom) //Zoomm is off and no button pressed
             {
-                currentZoomLevel += scrollZoomInstance.zoomStepAmount.Value * Math.Sign(scrollWheelValue);
-                currentZoomLevel = Math.Max(Math.Min(currentZoomLevel,1),0); //clamp currentZoomLevel 0> <1
-            }
-
-
-            if (!scrollZoomInstance.holdToZoom.Value && !CVRInputManager.Instance.zoom)
-            {
-                if (zoomToggleState)
-                {
-                    CVR_DesktopCameraController._cam.fieldOfView = Mathf.Lerp(CVR_DesktopCameraController.defaultFov, Mathf.Lerp(60f, 1f, scrollZoomInstance.maxZoomLevel.Value), currentZoomLevel);
-                    CVR_DesktopCameraController.currentZoomProgress = currentZoomLevel;
-                    CVR_DesktopCameraController.currentZoomProgressCurve = currentZoomLevel;
-                    return false;
-                }
-                else
-                {
-                    CVR_DesktopCameraController._cam.fieldOfView = CVR_DesktopCameraController.defaultFov;
-                    CVR_DesktopCameraController.currentZoomProgress = 0f;
-                    CVR_DesktopCameraController.currentZoomProgressCurve = 0f;
-                    return false;
-                }
-            }
-
-
-
-
-            if (CVRInputManager.Instance.zoom )
-            {
-       
-                    CVR_DesktopCameraController._cam.fieldOfView = Mathf.Lerp(CVR_DesktopCameraController.defaultFov, Mathf.Lerp(60f, 1f, scrollZoomInstance.maxZoomLevel.Value), currentZoomLevel);
-                    CVR_DesktopCameraController.currentZoomProgress = currentZoomLevel;
-                    CVR_DesktopCameraController.currentZoomProgressCurve = currentZoomLevel;
-
+                CVR_DesktopCameraController._cam.fieldOfView = CVR_DesktopCameraController.defaultFov;
+                CVR_DesktopCameraController.currentZoomProgress = 0f;
+                CVR_DesktopCameraController.currentZoomProgressCurve = 0f;
                 return false;
+
             }
 
-            CVR_DesktopCameraController._cam.fieldOfView = CVR_DesktopCameraController.defaultFov;
-            CVR_DesktopCameraController.currentZoomProgress = 0f;
-            CVR_DesktopCameraController.currentZoomProgressCurve = 0f;
+            currentZoomLevel += scrollZoomInstance.zoomStepAmount.Value * Math.Sign(scrollWheelValue);
+            currentZoomLevel = Math.Max(Math.Min(currentZoomLevel, 1), 0); //clamp currentZoomLevel 0> <1               
 
-            if (scrollZoomInstance.rememberLastZoomLevel.Value)
-            {
-                return false;
-            } else
+
+            CVR_DesktopCameraController._cam.fieldOfView = Mathf.Lerp(CVR_DesktopCameraController.defaultFov, Mathf.Lerp(60f, 1f, scrollZoomInstance.maxZoomLevel.Value), currentZoomLevel);
+            CVR_DesktopCameraController.currentZoomProgress = currentZoomLevel;
+            CVR_DesktopCameraController.currentZoomProgressCurve = currentZoomLevel;
+            
+
+
+
+
+
+            if (!scrollZoomInstance.rememberLastZoomLevel.Value)
             {
                 currentZoomLevel = 0f;
-                return false;
-            }
+            } 
+                
+            return false;
+            
         }
     }
 }
