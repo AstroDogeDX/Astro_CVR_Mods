@@ -73,7 +73,7 @@ public class ScrollZoom : MelonMod {
             CVR_DesktopCameraController.currentZoomProgress = currentZoomLevel;
             CVR_DesktopCameraController.currentZoomProgressCurve = currentZoomLevel;
 
-            if (!scrollZoomInstance.rememberLastZoomLevel.Value)
+            if (!scrollZoomInstance.rememberLastZoomLevel.Value && !zoomToggleState)
             {
                 currentZoomLevel = 0f;
             } 
