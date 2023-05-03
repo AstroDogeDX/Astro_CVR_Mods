@@ -33,6 +33,7 @@ public class ScrollZoom : MelonMod {
         public static bool zoomToggleState;
         public static float currentZoomLevel;
         public static bool debounceInProgress = false;
+        private static bool toggleSet = false;
 
         public static IEnumerator DebounceCoroutine(float debounceTime)
         {
@@ -54,6 +55,18 @@ public class ScrollZoom : MelonMod {
         [HarmonyPatch(typeof(CVR_DesktopCameraController), nameof(CVR_DesktopCameraController.Update))]
         public static bool before_CVR_DesktopCameraController_Update(CVR_DesktopCameraController __instance) { 
             float scrollWheelValue = Input.GetAxis("Mouse ScrollWheel");
+
+            //Toggles Zoom when button is pressed, only allows new toggle after button is let go of.
+            if (CVRInputManager.Instance.zoom && !debounceInProgress && !scrollZoomInstance.holdToZoom.Value)
+            {
+                zoomToggleState = !zoomToggleState;
+                MelonLogger.Msg($"Zoom Toggle State: {zoomToggleState}");
+                debounceInProgress = true;
+            }
+            else if (!CVRInputManager.Instance.zoom)
+            {
+                debounceInProgress = false;
+            }
 
             if (!CVR_DesktopCameraController.enableZoom)
             {
@@ -85,20 +98,16 @@ public class ScrollZoom : MelonMod {
                 }
             }
 
-            if (CVRInputManager.Instance.zoom && !debounceInProgress)
+
+
+
+            if (CVRInputManager.Instance.zoom )
             {
-                if (!scrollZoomInstance.holdToZoom.Value)
-                {
-                    zoomToggleState = !zoomToggleState;
-                    MelonLogger.Msg($"Zoom Toggle State: {zoomToggleState}");
-                    __instance.StartCoroutine(DebounceCoroutine(0.3f)); // Adjust the debounce time (in seconds) as needed
-                }
-                else
-                {
+       
                     CVR_DesktopCameraController._cam.fieldOfView = Mathf.Lerp(CVR_DesktopCameraController.defaultFov, Mathf.Lerp(60f, 1f, scrollZoomInstance.maxZoomLevel.Value), currentZoomLevel);
                     CVR_DesktopCameraController.currentZoomProgress = currentZoomLevel;
                     CVR_DesktopCameraController.currentZoomProgressCurve = currentZoomLevel;
-                }
+
                 return false;
             }
 
