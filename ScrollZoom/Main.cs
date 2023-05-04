@@ -1,5 +1,6 @@
 using ABI_RC.Core.Player;
 using ABI_RC.Core.Savior;
+using ABI_RC.Core.Util.Object_Behaviour;
 using HarmonyLib;
 using MelonLoader;
 using UnityEngine;
@@ -35,6 +36,12 @@ public class ScrollZoom : MelonMod {
         public static float userDefinedFov;
         public static float currentFov;
 
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(CameraFovClone), nameof(CameraFovClone.Update))]
+        public static bool before_CameraFovClone_Update()
+        {
+            return false;
+        }
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(CVR_DesktopCameraController), nameof(CVR_DesktopCameraController.Update))]
@@ -57,12 +64,6 @@ public class ScrollZoom : MelonMod {
             else if (!CVRInputManager.Instance.zoom)
             {
                 debounceInProgress = false;
-            }
-
-            //Disables toggled scrolling if the quick menu/big menu is opened. TODO: Find a callback for when a menu opens instead for unknown scenarios/mod compat.
-            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Tab))
-            {
-                zoomToggleState = false;
             }
 
             if (scrollWheelValue > 0f && CVRInputManager.Instance.zoom && scrollZoomInstance.holdToZoom.Value || scrollWheelValue > 0f && !scrollZoomInstance.holdToZoom.Value && zoomToggleState)
