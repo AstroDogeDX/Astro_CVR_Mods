@@ -110,6 +110,11 @@ public class ScrollZoom : MelonMod {
                 currentZoomLevel = 0f;
             }
 
+            if (scrollZoomInstance.maxZoomLevel.Value == 0f) // Prevents setting the max zoom level to 0 and breaking everything
+            {
+                scrollZoomInstance.maxZoomLevel.Value = 0.01f;
+            }
+
             return false;
         }
     }
