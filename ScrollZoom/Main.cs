@@ -74,13 +74,19 @@ public class ScrollZoom : MelonMod {
 
             if (scrollWheelValue > 0f && CVRInputManager.Instance.zoom && scrollZoomInstance.holdToZoom.Value || scrollWheelValue > 0f && !scrollZoomInstance.holdToZoom.Value && zoomToggleState)
             {
-                targetZoomLevel += scrollZoomInstance.zoomStepAmount.Value; //Increment the target zoom level when the scroll wheel moves up
+                targetZoomLevel += scrollZoomInstance.zoomStepAmount.Value * (1f - Mathf.Pow(targetZoomLevel - 0f / (scrollZoomInstance.maxZoomLevel.Value - 0f), 2f)); //Increment the target zoom level when the scroll wheel moves up
                 targetZoomLevel = Mathf.Clamp(targetZoomLevel, 0f, scrollZoomInstance.maxZoomLevel.Value);
                 MelonLogger.Msg($"Target Zoom Level: {targetZoomLevel}");
             }
             else if (scrollWheelValue < 0f && CVRInputManager.Instance.zoom && scrollZoomInstance.holdToZoom.Value || scrollWheelValue < 0f && !scrollZoomInstance.holdToZoom.Value && zoomToggleState)
             {
-                targetZoomLevel -= scrollZoomInstance.zoomStepAmount.Value; //Decrement the target zoom level when the scroll wheel moves down
+                if (targetZoomLevel >= 0.99f) // Stops the zoom level getting stuck at 0.99...f
+                {
+                    targetZoomLevel = 0.98f;
+                } else
+                {
+                    targetZoomLevel -= scrollZoomInstance.zoomStepAmount.Value * (1f - Mathf.Pow(targetZoomLevel - 0f / (scrollZoomInstance.maxZoomLevel.Value - 0f), 2f)); //Decrement the target zoom level when the scroll wheel moves down
+                }
                 targetZoomLevel = Mathf.Clamp(targetZoomLevel, 0f, scrollZoomInstance.maxZoomLevel.Value);
                 MelonLogger.Msg($"Target Zoom Level: {targetZoomLevel}");
             }
