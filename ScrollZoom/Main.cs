@@ -1,6 +1,7 @@
 using ABI_RC.Core.Player;
 using ABI_RC.Core.Savior;
 using ABI_RC.Core.Util.Object_Behaviour;
+using ABI_RC.Core.InteractionSystem;
 using HarmonyLib;
 using MelonLoader;
 using UnityEngine;
@@ -52,6 +53,11 @@ public class ScrollZoom : MelonMod {
             if (!CVR_DesktopCameraController.enableZoom)
             {
                 return false;
+            }
+
+            if (ViewManager.Instance._gameMenuOpen || CVR_MenuManager.Instance._quickMenuOpen)
+            {
+                zoomToggleState = false;
             }
 
             //Toggles Zoom when button is pressed, only allows new toggle after button is let go of.
