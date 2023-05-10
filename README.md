@@ -61,6 +61,6 @@ shell window opened, you need to close and open again, so it refreshes the Envir
 > ---
 > ⚠️ **Notice!**  
 >
-> This mod's developer(s) and the mod itself, along with the respective mod loaders, have no affiliation with ABI!
+> This mod's developer(s) and the mods themselves, along with the respective mod loaders, have no affiliation with ABI!
 >
 > ---
