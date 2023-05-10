@@ -12,6 +12,7 @@ public class ScrollZoom : MelonMod {
     private MelonPreferences_Category mainCategory;
     private MelonPreferences_Entry<bool> holdToZoom;
     private MelonPreferences_Entry<float> savedZoomLevel;
+    private MelonPreferences_Entry<float> targetZoomLevel;
     private MelonPreferences_Entry<bool> rememberLastZoomLevel;
     private MelonPreferences_Entry<float> maxZoomLevel;
     private MelonPreferences_Entry<float> zoomStepAmount;
@@ -19,10 +20,11 @@ public class ScrollZoom : MelonMod {
     public override void OnInitializeMelon() {
         mainCategory = MelonPreferences.CreateCategory("ScrollZoom");
         holdToZoom = mainCategory.CreateEntry<bool>("Hold to Zoom", true);
-        savedZoomLevel = (MelonPreferences_Entry<float>)mainCategory.CreateEntry<float>("Target Zoom Level", 1f, "Target Zoom Level", true);
+        targetZoomLevel = mainCategory.CreateEntry<float>("Target Zoom Level", 0.5f);
         rememberLastZoomLevel = mainCategory.CreateEntry<bool>("Remember Zoom Level", true);
         maxZoomLevel = mainCategory.CreateEntry<float>("Max Zoom Level", 0.5f);
         zoomStepAmount = mainCategory.CreateEntry<float>("+/- Amount Per Scroll", 0.1f);
+        savedZoomLevel = (MelonPreferences_Entry<float>)mainCategory.CreateEntry<float>("Saved Zoom Level", 1f, "Saved Zoom Level", true);
 
         HarmonyPatches.scrollZoomInstance = this;
 
@@ -40,8 +42,9 @@ public class ScrollZoom : MelonMod {
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(CameraFovClone), nameof(CameraFovClone.Update))]
-        public static bool before_CameraFovClone_Update()
+        public static bool before_CameraFovClone_Update(CameraFovClone __instance)
         {
+            __instance._camera.fieldOfView = CVR_DesktopCameraController.defaultFov;
             return false;
         }
 
@@ -106,7 +109,7 @@ public class ScrollZoom : MelonMod {
                 currentZoomLevel = Mathf.Lerp(currentZoomLevel, 0f, Time.deltaTime * 10f);
                 if (!scrollZoomInstance.rememberLastZoomLevel.Value && !zoomToggleState)
                 {
-                    scrollZoomInstance.savedZoomLevel.Value = 0f;
+                    scrollZoomInstance.savedZoomLevel.Value = scrollZoomInstance.targetZoomLevel.Value;
                 }
             }
 
