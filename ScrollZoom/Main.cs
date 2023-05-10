@@ -5,6 +5,8 @@ using ABI_RC.Core.InteractionSystem;
 using HarmonyLib;
 using MelonLoader;
 using UnityEngine;
+using MelonLoader.Preferences;
+using Astro.ScrollZoom.Properties;
 
 namespace Astro.ScrollZoom;
 
@@ -19,16 +21,26 @@ public class ScrollZoom : MelonMod {
 
     public override void OnInitializeMelon() {
         mainCategory = MelonPreferences.CreateCategory("ScrollZoom");
-        holdToZoom = mainCategory.CreateEntry<bool>("Hold to Zoom", true);
-        targetZoomLevel = mainCategory.CreateEntry<float>("Target Zoom Level", 0.5f);
-        rememberLastZoomLevel = mainCategory.CreateEntry<bool>("Remember Zoom Level", true);
-        maxZoomLevel = mainCategory.CreateEntry<float>("Max Zoom Level", 0.5f);
-        zoomStepAmount = mainCategory.CreateEntry<float>("+/- Amount Per Scroll", 0.1f);
-        savedZoomLevel = (MelonPreferences_Entry<float>)mainCategory.CreateEntry<float>("Saved Zoom Level", 1f, "Saved Zoom Level", true);
+        holdToZoom = mainCategory.CreateEntry<bool>("Hold to Zoom", true,
+            description: "If true, zoom works like default CVR. If false, zoom is a toggle");
+        targetZoomLevel = mainCategory.CreateEntry<float>("Target Zoom Level", 0.75f,
+            description: "Your 'default' zoom level between no zoom and your max zoom",
+            validator: new ValueRange<float>(0f, 1f));
+        rememberLastZoomLevel = mainCategory.CreateEntry<bool>("Remember Zoom Level", true,
+            description: "If true, your zoom will snap to the last zoom level you were at. If false, snap to your target zoom level");
+        maxZoomLevel = mainCategory.CreateEntry<float>("Max Zoom Level", 0.5f, 
+            description: "Maximum zoom between your defaultFov and 1deg FOV", 
+            validator: new ValueRange<float>(0.001f, 1f));
+        zoomStepAmount = mainCategory.CreateEntry<float>("+/- Amount Per Scroll", 0.1f, 
+            description: "Amount per scroll wheel turn to zoom in/out",
+            validator: new ValueRange<float>(0.001f, 1f));
+        savedZoomLevel = mainCategory.CreateEntry<float>("Saved Zoom Level", 1f, 
+            description: "[Hidden] Your last zoom level - used by 'remember zoom level'", 
+            is_hidden: true);
 
         HarmonyPatches.scrollZoomInstance = this;
 
-        MelonLogger.Msg($"Loaded!");
+        MelonLogger.Msg($"Loaded! {AssemblyInfoParams.Version}");
     }
 
     [HarmonyPatch]
@@ -37,8 +49,8 @@ public class ScrollZoom : MelonMod {
         public static bool zoomToggleState;
         public static float currentZoomLevel;
         public static bool debounceInProgress;
-        public static float userDefinedFov;
         public static float currentFov;
+        public static float cappedZoom;
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(CameraFovClone), nameof(CameraFovClone.Update))]
@@ -50,9 +62,11 @@ public class ScrollZoom : MelonMod {
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(CVR_DesktopCameraController), nameof(CVR_DesktopCameraController.Update))]
-        public static bool before_CVR_DesktopCameraController_Update(CVR_DesktopCameraController __instance)
+        public static bool before_CVR_DesktopCameraController_Update()
         {
             float scrollWheelValue = Input.GetAxis("Mouse ScrollWheel");
+
+            cappedZoom = Mathf.Lerp(CVR_DesktopCameraController.defaultFov, 1f, scrollZoomInstance.maxZoomLevel.Value);
 
             if (!CVR_DesktopCameraController.enableZoom)
             {
@@ -64,7 +78,6 @@ public class ScrollZoom : MelonMod {
                 zoomToggleState = false;
             }
 
-            //Toggles Zoom when button is pressed, only allows new toggle after button is let go of.
             if (CVRInputManager.Instance.zoom && !debounceInProgress && !scrollZoomInstance.holdToZoom.Value)
             {
                 zoomToggleState = !zoomToggleState;
@@ -78,33 +91,25 @@ public class ScrollZoom : MelonMod {
                 debounceInProgress = false;
             }
 
-            if (scrollWheelValue > 0f && CVRInputManager.Instance.zoom && scrollZoomInstance.holdToZoom.Value || scrollWheelValue > 0f && !scrollZoomInstance.holdToZoom.Value && zoomToggleState)
+            bool scrollWheelPositive = scrollWheelValue > 0f;
+            bool scrollWheelNegative = scrollWheelValue < 0f;
+            bool zoomingState = CVRInputManager.Instance.zoom && scrollZoomInstance.holdToZoom.Value || !scrollZoomInstance.holdToZoom.Value && zoomToggleState;
+
+            if (scrollWheelPositive && zoomingState || scrollWheelNegative && zoomingState)
             {
-                scrollZoomInstance.savedZoomLevel.Value += scrollZoomInstance.zoomStepAmount.Value * (1f - Mathf.Pow(scrollZoomInstance.savedZoomLevel.Value - 0f / (scrollZoomInstance.maxZoomLevel.Value - 0f), 2f)); //Increment the target zoom level when the scroll wheel moves up
-                scrollZoomInstance.savedZoomLevel.Value = Mathf.Clamp(scrollZoomInstance.savedZoomLevel.Value, 0f, scrollZoomInstance.maxZoomLevel.Value);
-#if DEBUG
-                MelonLogger.Msg($"Target Zoom Level: {scrollZoomInstance.savedZoomLevel.Value}");
-#endif
-            }
-            else if (scrollWheelValue < 0f && CVRInputManager.Instance.zoom && scrollZoomInstance.holdToZoom.Value || scrollWheelValue < 0f && !scrollZoomInstance.holdToZoom.Value && zoomToggleState)
-            {
-                if (scrollZoomInstance.savedZoomLevel.Value >= 0.99f) // Stops the zoom level getting stuck at 0.99...f
-                {
-                    scrollZoomInstance.savedZoomLevel.Value = 0.98f;
-                } else
-                {
-                    scrollZoomInstance.savedZoomLevel.Value -= scrollZoomInstance.zoomStepAmount.Value * (1f - Mathf.Pow(scrollZoomInstance.savedZoomLevel.Value - 0f / (scrollZoomInstance.maxZoomLevel.Value - 0f), 2f)); //Decrement the target zoom level when the scroll wheel moves down
-                }
-                scrollZoomInstance.savedZoomLevel.Value = Mathf.Clamp(scrollZoomInstance.savedZoomLevel.Value, 0f, scrollZoomInstance.maxZoomLevel.Value);
+                float zoomChange = scrollZoomInstance.zoomStepAmount.Value * (1f - Mathf.Pow(scrollZoomInstance.savedZoomLevel.Value - 0f / (1f - 0f), 2f));
+                scrollZoomInstance.savedZoomLevel.Value += scrollWheelPositive ? zoomChange : (scrollZoomInstance.savedZoomLevel.Value >= 0.99f ? -0.01f : -zoomChange);
+                scrollZoomInstance.savedZoomLevel.Value = Mathf.Clamp01(scrollZoomInstance.savedZoomLevel.Value);
 #if DEBUG
                 MelonLogger.Msg($"Target Zoom Level: {scrollZoomInstance.savedZoomLevel.Value}");
 #endif
             }
 
-            if (scrollZoomInstance.holdToZoom.Value && CVRInputManager.Instance.zoom || !scrollZoomInstance.holdToZoom.Value && zoomToggleState)
+            if (zoomingState)
             {
-                currentZoomLevel = Mathf.Lerp(currentZoomLevel, scrollZoomInstance.savedZoomLevel.Value, Time.deltaTime * 10f); //Smoothly interpolate between the current zoom level and the target zoom level
-            } else
+                currentZoomLevel = Mathf.Lerp(currentZoomLevel, scrollZoomInstance.savedZoomLevel.Value, Time.deltaTime * 10f);
+            }
+            else
             {
                 currentZoomLevel = Mathf.Lerp(currentZoomLevel, 0f, Time.deltaTime * 10f);
                 if (!scrollZoomInstance.rememberLastZoomLevel.Value && !zoomToggleState)
@@ -113,16 +118,10 @@ public class ScrollZoom : MelonMod {
                 }
             }
 
-            currentFov = Mathf.Lerp(CVR_DesktopCameraController.defaultFov, 1f, currentZoomLevel);
+            currentFov = Mathf.Lerp(CVR_DesktopCameraController.defaultFov, cappedZoom, currentZoomLevel);
 
             CVR_DesktopCameraController._cam.fieldOfView = currentFov;
-            CVR_DesktopCameraController.currentZoomProgress = currentZoomLevel;
-            CVR_DesktopCameraController.currentZoomProgressCurve = currentZoomLevel;
-
-            if (scrollZoomInstance.maxZoomLevel.Value == 0f) // Prevents setting the max zoom level to 0 and breaking everything
-            {
-                scrollZoomInstance.maxZoomLevel.Value = 0.5f;
-            }
+            CVR_DesktopCameraController.currentZoomProgress = CVR_DesktopCameraController.currentZoomProgressCurve = currentZoomLevel;
 
             return false;
         }
