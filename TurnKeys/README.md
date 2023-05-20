@@ -1,8 +1,8 @@
 ﻿# TurnKeys
 
-### A really niche mod to rotate with the keyboard.
+### A really niche mod to turn with the keyboard.
 
-Enables the ability rotate using the Q/E keys on desktop!
+Enables the ability turn using the Q/E keys on desktop!
 
 #### Additionally includes:
 + Nothing. That's it.
