@@ -4,12 +4,20 @@ A collection of small, random mods made by AstroDoge.
 
 ---
 
-## ScrollZoom
+## [ScrollZoom](ScrollZoom)
 
 *A rather simple mod to control zoom level on desktop using the scroll wheel!*
 
 Additional options include switching from 'hold' to 'toggle' for zooming, the maximum zoom distance and amount of zoom per wheel turn.
 Current zoom level is passed to CVR's parameter stream as `Zoom Factor` - so could be used to drive animations via Motion Time!
+
+---
+
+## [TurnKeys](TurnKeys)
+
+*A super niche mod to turn using the keyboard in desktop mode.*
+
+You can now turn using Q/E without needing to touch the mouse and... that's all!
 
 ---
 
