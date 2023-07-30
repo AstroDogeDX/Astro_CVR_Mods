@@ -10,3 +10,4 @@ lib_names
 ManagedLibs/*.dll
 ManagedLibs/*.db
 .vs/
+lib_names.xml
