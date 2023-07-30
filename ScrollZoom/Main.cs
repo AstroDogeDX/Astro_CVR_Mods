@@ -1,7 +1,7 @@
 using ABI_RC.Core.Player;
-using ABI_RC.Core.Savior;
 using ABI_RC.Core.Util.Object_Behaviour;
 using ABI_RC.Core.InteractionSystem;
+using ABI_RC.Systems.InputManagement;
 using HarmonyLib;
 using MelonLoader;
 using UnityEngine;
@@ -73,7 +73,7 @@ public class ScrollZoom : MelonMod {
                 return false;
             }
 
-            if (ViewManager.Instance._gameMenuOpen || CVR_MenuManager.Instance._quickMenuOpen)
+            if (ViewManager.Instance.isGameMenuOpen())
             {
                 zoomToggleState = false;
             }

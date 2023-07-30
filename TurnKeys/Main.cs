@@ -1,8 +1,9 @@
 ﻿using MelonLoader;
 using HarmonyLib;
-using ABI_RC.Core.Savior;
+using ABI_RC.Systems.InputManagement;
 using UnityEngine;
 using Astro.TurnKeys.Properties;
+using ABI_RC.Systems.InputManagement.InputModules;
 
 namespace Astro.TurnKeys;
 public class TurnKeys : MelonMod
@@ -25,8 +26,8 @@ public class TurnKeys : MelonMod
         public static TurnKeys __TurnKeys;
 
         [HarmonyPostfix]
-        [HarmonyPatch(typeof(InputModuleMouseKeyboard), nameof(InputModuleMouseKeyboard.UpdateInput))]
-        public static void after_InputModuleMouseKeyboard(InputModuleMouseKeyboard __instance)
+        [HarmonyPatch(typeof(CVRInputModule_Keyboard), nameof(CVRInputModule_Keyboard.UpdateInput))]
+        public static void after_CVRInputModule_Keyboard(CVRInputModule_Keyboard __instance)
         {
             if (Input.GetKey(KeyCode.Q))
             {
