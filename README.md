@@ -21,6 +21,14 @@ You can now turn using Q/E without needing to touch the mouse and... that's all!
 
 ---
 
+## [BringMeBoost](BringMeBoost)
+
+*A quick 'n' dirty fix for missing a missing input.*
+
+Adds the missing VR input for `Input Car Boost` making the parameter stream actually useful.
+
+---
+
 ## Building
 
 In order to build this project follow the instructions (thanks [@Daky](https://github.com/dakyneko) & [@kafeijao](https://github.com/kafeijao)!):
