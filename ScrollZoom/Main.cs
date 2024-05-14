@@ -73,7 +73,7 @@ public class ScrollZoom : MelonMod {
                 return false;
             }
 
-            if (ViewManager.Instance.isGameMenuOpen())
+            if (ViewManager.Instance.IsAnyMenuOpen)
             {
                 zoomToggleState = false;
             }
