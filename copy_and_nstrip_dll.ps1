@@ -1,3 +1,8 @@
+param(
+    # Whether it should ask user for inputs to proceed or in should run the whole script without prompting
+    [switch]$silent = $false
+)
+
 # CVR and Melon Loader Dependencies
 $0HarmonydllPath    = "\MelonLoader\net35\0Harmony.dll"
 $melonLoaderdllPath = "\MelonLoader\net35\MelonLoader.dll"
@@ -15,7 +20,7 @@ $dllsToStrip = @('Assembly-CSharp.dll','Assembly-CSharp-firstpass.dll')
 $modNames = @()
 
 # Array with dlls to ignore from ManagedLibs
-$cvrManagedLibNamesToIgnore = @("netstandard")
+$cvrManagedLibNamesToIgnore = @("netstandard", "Mono.Cecil", "Unity.Burst.Cecil")
 
 if ($cvrPath -and (Test-Path "$cvrPath\$cvrExecutable")) {
     # Found ChilloutVR.exe in the existing CVRPATH
@@ -39,15 +44,15 @@ else {
 }
 
 $scriptDir = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
-$managedLibsFolder = $scriptDir + "\ManagedLibs"
+$managedLibsFolder = $scriptDir + "\.ManagedLibs"
 
 if (!(Test-Path $managedLibsFolder)) {
     New-Item -ItemType Directory -Path $managedLibsFolder
-    Write-Host "ManagedLibs folder created successfully."
+    Write-Host ".ManagedLibs folder created successfully."
 }
 
 Write-Host ""
-Write-Host "Copying the DLLs from the CVR, MelonLoader, and Mods folder to the ManagedLibs"
+Write-Host "Copying the DLLs from the CVR, MelonLoader, and Mods folder to the .ManagedLibs"
 
 
 Copy-Item $cvrPath$0HarmonydllPath -Destination $managedLibsFolder
@@ -56,17 +61,33 @@ Copy-Item $cvrPath$CecilallPath -Destination $managedLibsFolder
 Copy-Item $cvrPath$cvrManagedDataPath"\*" -Destination $managedLibsFolder
 
 
-# Saving XML ready libs for the Build.props file
-$lib_names_xml = "<Project><ItemGroup>"
-$lib_names_xml += '<Reference Include="0Harmony"><HintPath>$(MsBuildThisFileDirectory)\ManagedLibs\0Harmony.dll</HintPath><Private>False</Private></Reference>'
-$lib_names_xml += '<Reference Include="MelonLoader"><HintPath>$(MsBuildThisFileDirectory)\ManagedLibs\MelonLoader.dll</HintPath><Private>False</Private></Reference>'
+# Generate the References.Items.props file, that contains the references to all ManagedData Dlls
+# Define indentation as a variable
+$indent = '    '  # 4 spaces
+
+$lib_names_xml = "<Project>`n${indent}<ItemGroup>`n"
+
+# Manually add references with specific paths and settings
+$lib_names_xml += "${indent}${indent}<Reference Include=`"0Harmony`">`n${indent}${indent}${indent}<HintPath>`$(MsBuildThisFileDirectory)\.ManagedLibs\0Harmony.dll</HintPath>`n${indent}${indent}${indent}<Private>False</Private>`n${indent}${indent}</Reference>`n"
+$lib_names_xml += "${indent}${indent}<Reference Include=`"MelonLoader`">`n${indent}${indent}${indent}<HintPath>`$(MsBuildThisFileDirectory)\.ManagedLibs\MelonLoader.dll</HintPath>`n${indent}${indent}${indent}<Private>False</Private>`n${indent}${indent}</Reference>`n"
+$lib_names_xml += "${indent}${indent}<Reference Include=`"Mono.Cecil`">`n${indent}${indent}${indent}<HintPath>`$(MsBuildThisFileDirectory)\.ManagedLibs\Mono.Cecil.dll</HintPath>`n${indent}${indent}${indent}<Private>False</Private>`n${indent}${indent}</Reference>`n"
+
+# Iterate over files in a specified directory, adding them as references if not in the ignore list
 foreach ($file in Get-ChildItem $cvrPath$cvrManagedDataPath"\*") {
-    if($cvrManagedLibNamesToIgnore -notcontains $file.BaseName) {
-        $lib_names_xml += "<Reference Include=`"$($file.BaseName)`"><HintPath>`$(MsBuildThisFileDirectory)\ManagedLibs\$($file.BaseName).dll</HintPath><Private>False</Private></Reference>"
+    if ($cvrManagedLibNamesToIgnore -notcontains $file.BaseName) {
+        $lib_names_xml += "${indent}${indent}<Reference Include=`"$($file.BaseName)`">`n${indent}${indent}${indent}<HintPath>`$(MsBuildThisFileDirectory)\.ManagedLibs\$($file.BaseName).dll</HintPath>`n${indent}${indent}${indent}<Private>False</Private>`n${indent}${indent}</Reference>`n"
     }
 }
-$lib_names_xml += "</ItemGroup></Project>"
-$lib_names_xml | Out-File -Encoding UTF8 -FilePath lib_names.xml
+
+# Close the ItemGroup and Project tags with proper formatting
+$lib_names_xml += "${indent}</ItemGroup>`n</Project>"
+
+# Output the constructed XML content to a file with UTF8 encoding
+$lib_names_xml | Out-File -Encoding UTF8 -FilePath "References.Items.props"
+
+Write-Host ""
+Write-Host "Generated References.Items.props file containing the references to all common ManagedLibs"
+
 
 
 # Third Party Dependencies
@@ -81,12 +102,12 @@ foreach ($modName in $modNames) {
 
     # Attempt to grab from the mods folder
     if (Test-Path $modPath -PathType Leaf) {
-        Write-Host "    Copying $modDll from $melonModsPath to \ManagedLibs!"
+        Write-Host "    Copying $modDll from $melonModsPath to \.ManagedLibs!"
         Copy-Item $modPath -Destination $managedLibsFolder
     }
-    # Check if they already exist in the ManagedLibs
+    # Check if they already exist in the .ManagedLibs
     elseif (Test-Path $managedLibsModPath -PathType Leaf) {
-        Write-Host "    Ignoring $modDll since already exists in \ManagedLibs!"
+        Write-Host "    Ignoring $modDll since already exists in \.ManagedLibs!"
     }
     # If we fail, lets add to the missing mods list
     else {
@@ -122,9 +143,12 @@ if ($missingMods.Count -gt 0) {
 Write-Host ""
 Write-Host "Copied all libraries!"
 Write-Host ""
-Write-Host "Press any key to strip the Dlls using NStrip"
-$HOST.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | OUT-NULL
-$HOST.UI.RawUI.Flushinputbuffer()
+
+if (-not $silent) {
+    Write-Host "Press any key to strip the Dlls using NStrip"
+    $HOST.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | OUT-NULL
+    $HOST.UI.RawUI.Flushinputbuffer()
+}
 
 Write-Host "NStrip Convert all private/protected stuff to public. Requires <AllowUnsafeBlocks>true></AllowUnsafeBlocks>"
 
@@ -152,6 +176,9 @@ foreach($dllFile in $dllsToStrip) {
 Write-Host ""
 Write-Host "Copied all libraries and stripped the DLLs!"
 Write-Host ""
-Write-Host "Press any key to exit"
-$HOST.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | OUT-NULL
-$HOST.UI.RawUI.Flushinputbuffer()
+
+if (-not $silent) {
+    Write-Host "Press any key to exit"
+    $HOST.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | OUT-NULL
+    $HOST.UI.RawUI.Flushinputbuffer()
+}
